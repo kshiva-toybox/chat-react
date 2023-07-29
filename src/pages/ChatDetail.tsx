@@ -1,6 +1,8 @@
+import Echo from "laravel-echo";
+import Pusher from "pusher-js";
 import { useParams } from "react-router-dom";
 import useGetDetail from "../hooks/Room/useGetDetail";
-import { FormEvent } from "react";
+import { FormEvent, useEffect } from "react";
 import api from "../utils/api";
 import useGetComments from "../hooks/Room/useGetComments";
 
@@ -9,17 +11,54 @@ const ChatDetail = () => {
   const { room, isLoading: isRoomLoading, isError: isRoomError } = useGetDetail(id);
   const { comments, mutate: commentsMutate, isLoading: isCommentsLoading, isError: isCommentsError } = useGetComments(id);
 
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    // Enable pusher logging - don't include this in production
+    Pusher.logToConsole = true;
+    const echo = new Echo({
+      broadcaster: 'pusher',
+      key: 'app-key',
+      wsHost: window.location.hostname,
+      wsPort: 6001,
+      disableStats: true,
+      enabledTransports: ["ws", "wss"],
+      forceTLS: false,
+      cluster: 'mt1',
+    });
+
+    const channel = echo.channel(`streams.${id}`)
+
+    channel.listen('ChatCommentSended', (e: any) => {
+      console.log(e.comment)
+
+      commentsMutate((data) => {
+        return {
+          ...data,
+          data: [
+            ...data?.data ?? [],
+            e.comment
+          ]
+        }
+      }, false);
+    });
+
+    return () => {
+      channel.stopListening('ChatCommentSended');
+      echo.disconnect();
+    };
+
+  }, [id, commentsMutate]);
+
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     const formData = new FormData(e.target as HTMLFormElement);
-    const nickname = formData.get('nickname');
-    const body = formData.get('body');
-
-    await api.post(`/streams/${id}/comments`, formData);
+    await api.post(`/api/streams/${id}/comments`, formData);
   }
-
-  console.log({ comments })
 
   return (
     <div>

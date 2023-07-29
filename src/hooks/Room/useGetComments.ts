@@ -18,7 +18,9 @@ type Data = {
 const fetcher = (url: string): Promise<Data> => api.get(url).then(res => res.data)
 
 const useGetComments = (id?: string) => {
-  const { data, error, mutate } = useSWR(id && `/api/streams/${id}/comments`, fetcher)
+  const { data, error, mutate } = useSWR(id && `/api/streams/${id}/comments`, fetcher, {
+    revalidateOnFocus: false,
+  })
 
   return {
     comments: data,
