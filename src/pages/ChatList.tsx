@@ -12,6 +12,7 @@ const ChatList = () => {
       {rooms && rooms.data.map((room) => (
         <Link to={`/rooms/${room.id}`} key={room.id}>
           <h2>{room.name}</h2>
+          <span>like count: {room.like}</span>
         </Link>
       ))}
     </div>

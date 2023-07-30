@@ -8,7 +8,7 @@ import useGetComments from "../hooks/Room/useGetComments";
 
 const ChatDetail = () => {
   const { id } = useParams();
-  const { room, isLoading: isRoomLoading, isError: isRoomError } = useGetDetail(id);
+  const { room, mutate: roomMutate, isLoading: isRoomLoading, isError: isRoomError } = useGetDetail(id);
   const { comments, mutate: commentsMutate, isLoading: isCommentsLoading, isError: isCommentsError } = useGetComments(id);
 
   useEffect(() => {
@@ -45,12 +45,24 @@ const ChatDetail = () => {
       }, false);
     });
 
+    channel.listen('ChatLiked', (e: any) => {
+      console.log(e.stream);
+
+      roomMutate((data) => {
+        return {
+          ...data,
+          data: e.stream,
+        }
+      }, false);
+    });
+
     return () => {
       channel.stopListening('ChatCommentSended');
+      channel.stopListening('ChatLiked');
       echo.disconnect();
     };
 
-  }, [id, commentsMutate]);
+  }, [id, commentsMutate, roomMutate]);
 
 
   const handleSubmit = async (e: FormEvent) => {
@@ -60,12 +72,17 @@ const ChatDetail = () => {
     await api.post(`/api/streams/${id}/comments`, formData);
   }
 
+  const handleLike = async () => {
+    await api.post(`/api/streams/${id}/like`);
+  }
+
   return (
     <div>
       <h1>ChatDetail</h1>
       {isRoomLoading && <p>Loading...</p>}
       {isRoomError && <p>Error</p>}
       {room && <h2>{room.data.name}</h2>}
+      {room && <span>like count: {room.data.like}</span>}
 
       <h3>Messages</h3>
       {isCommentsLoading && <p>Loading...</p>}
@@ -80,6 +97,7 @@ const ChatDetail = () => {
         <input style={{ width: '100px' }} type="text" name="nickname" id="nickname" placeholder="nickname" />
         <input type="text" name="body" id="body" placeholder="body" />
         <button type="submit">Send</button>
+        <button type="button" onClick={handleLike}>LIKE</button>
       </form>
     </div>
   )

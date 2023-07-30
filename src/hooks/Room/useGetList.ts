@@ -4,6 +4,7 @@ import api from '../../utils/api'
 type Room = {
   id: number
   name: string
+  like: number
 }
 
 type Data = {

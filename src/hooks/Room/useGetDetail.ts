@@ -4,6 +4,7 @@ import api from '../../utils/api'
 type Room = {
   id: number
   name: string
+  like: number
 }
 
 type Data = {
@@ -13,12 +14,13 @@ type Data = {
 const fetcher = (url: string): Promise<Data> => api.get(url).then(res => res.data)
 
 const useGetDetail = (id?: string) => {
-  const { data, error } = useSWR(id && `/api/streams/${id}`, fetcher)
+  const { data, error, mutate } = useSWR(id && `/api/streams/${id}`, fetcher)
 
   return {
     room: data,
     isLoading: !error && !data,
-    isError: error
+    isError: error,
+    mutate,
   }
 }
 
